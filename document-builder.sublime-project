@@ -1,0 +1,17 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"file_exclude_patterns": ["*.sublime-workspace"]
+		}
+	],
+	"build_systems": [
+		{
+			"name": "Build document",
+			"cmd": ["document-builder", "--o", "."],
+			"working_dir": "${project_path}",
+			"shell": "true"
+		}
+	]
+}
