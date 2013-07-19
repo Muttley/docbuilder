@@ -42,7 +42,7 @@
 
 	<xsl:attribute-set name="monospace.verbatim.properties">
 		<xsl:attribute name="font-family">Consolas</xsl:attribute>
-		<xsl:attribute name="font-size">9pt</xsl:attribute>
+		<xsl:attribute name="font-size">10pt</xsl:attribute>
 		<xsl:attribute name="keep-together.within-column">always</xsl:attribute>
 	</xsl:attribute-set>
 

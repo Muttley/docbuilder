@@ -2,12 +2,14 @@
 
 use common::sense;
 
-use lib './lib';
-
 use Data::Dump qw(pp);
 use File::Basename;
+use FindBin;
 use Getopt::Long;
 use JSON::XS;
+
+use lib "$FindBin::Bin/lib";
+
 use Mutt::DocBuilder;
 
 my $program = fileparse ($0);
