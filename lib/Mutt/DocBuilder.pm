@@ -2,11 +2,11 @@ package Mutt::DocBuilder;
 
 use common::sense;
 
-use Mutt::Platform qw(temp_directory);
 use Data::Dump qw(pp);
 use File::Basename;
 use File::Copy;
 use File::Path;
+use File::Temp;
 use JSON::XS;
 use Moose;
 
@@ -32,20 +32,7 @@ has 'config' => (
 
 		my $filename = $self->source . '/config.json';
 
-		my $json;
-		eval {
-			local $/ = undef;
-			open (my $fh, "<", $filename)
-				|| die "Unable to open file: $!";
-			$json = <$fh>;
-			close $fh;
-		};
-
-		eval {
-			$json = decode_json ($json);
-		};
-
-		return $json || {};
+		return $self->slurp_json ($filename) || {};
 	}
 );
 
@@ -58,20 +45,7 @@ has 'global_replacements' => (
 
 		my $filename = $self->templates . '/global-replacements.json';
 
-		my $json;
-		eval {
-			local $/ = undef;
-			open (my $fh, "<", $filename)
-				|| die "Unable to open file: $!";
-			$json = <$fh>;
-			close $fh;
-		};
-
-		eval {
-			$json = decode_json ($json);
-		};
-
-		return $json || {};
+		return $self->slurp_json ($filename) || {};
 	},
 );
 
@@ -80,8 +54,7 @@ has 'images' => (
 	isa => 'Str',
 	lazy => 1,
 	default => sub {
-		my $self = shift;
-		return $self->base_dir . "/images";
+		return shift->base_dir . '/images';
 	}
 );
 
@@ -107,7 +80,9 @@ has 'merged_markdown' => (
 	default => sub {
 		my $self = shift;
 
-		return $self->temp_dir . '/' . $self->title . ".md";
+		my $filename = $self->sanitize_filename ($self->title . ".md");
+
+		return $self->temp_dirname . "/$filename";
 	}
 );
 
@@ -132,9 +107,7 @@ has 'pdf_filename' => (
 
 		$title .= '_' . uc ($self->language) . ".pdf";
 
-		$title =~ s/\s+/_/g;
-
-		return $title;
+		return $self->sanitize_filename ($title);
 	}
 );
 
@@ -147,20 +120,8 @@ has 'replacements' => (
 
 		my $filename = $self->source . '/replacements.json';
 
-		my $json;
-		eval {
-			local $/ = undef;
-			open (my $fh, "<", $filename)
-				|| die "Unable to open file: $!";
-			$json = <$fh>;
-			close $fh;
-		};
+		my $json = $self->slurp_json ($filename);
 
-		eval {
-			$json = decode_json ($json);
-		};
-
-		$json ||= {};
 		$json->{$self->language} ||= {};
 		$json->{global} ||= {};
 
@@ -232,24 +193,32 @@ has 'tag_subroutines' => (
 	isa => 'ArrayRef[Str]',
 	lazy => 1,
 	default => sub {
-		my @subs = qw(process_images process_indexes process_links process_replacements);
+		my @subs = qw(
+			process_images
+			process_indexes
+			process_links
+			process_replacements
+		);
+
 		return \@subs;
 	}
 );
 
 has 'temp_dir' => (
 	is => 'ro',
+	isa => 'File::Temp::Dir',
+	lazy => 1,
+	default => sub {
+		return File::Temp->newdir (CLEANUP => 1);
+	}
+);
+
+has 'temp_dirname' => (
+	is => 'ro',
 	isa => 'Str',
 	lazy => 1,
 	default => sub {
-		my $temp_dir = temp_directory . "/docbuilder-$$";
-
-		unless (-d $temp_dir) {
-			mkdir $temp_dir
-				|| die "Unable to create temp directory '$temp_dir': $!";
-		}
-
-		return $temp_dir;
+		return shift->temp_dir->dirname;
 	}
 );
 
@@ -286,7 +255,10 @@ has 'xml_file' => (
 	lazy => 1,
 	default => sub {
 		my $self = shift;
-		return $self->temp_dir . '/' . $self->title . ".xml";
+
+		my $filename = $self->sanitize_filename ($self->title . ".xml");
+
+		return $self->temp_dirname . "/$filename";
 	}
 );
 
@@ -299,11 +271,6 @@ sub build {
 	$self->create_table_ids;
 	$self->parse_xml;
 	$self->xml_to_pdf;
-	$self->cleanup;
-}
-
-sub cleanup {
-	rmtree (shift->temp_dir);
 }
 
 sub copy_images {
@@ -318,7 +285,7 @@ sub copy_images {
 
 			while (my $entry = readdir $dh) {
 				next if ($entry eq '.' || $entry eq '..');
-				copy ("$path/$entry", $self->temp_dir . '/.')
+				copy ("$path/$entry", $self->temp_dirname . '/.')
 					|| die "Failed to copy image file: $!";
 			}
 
@@ -347,7 +314,7 @@ sub create_table_ids {
 			# Convert title to supported id format...
 			$table_id =~ s/^\s+//g;
 			$table_id =~ s/\s+$//g;
-			$table_id = lc $table_id;
+			$table_id =  lc $table_id;
 			$table_id =~ s/[^a-z0-9 ]//g;
 			$table_id =~ s/ /-/g;
 
@@ -617,6 +584,17 @@ sub process_replacements {
 	return $line;
 }
 
+sub sanitize_filename {
+	my $self = shift;
+	my $filename = shift;
+
+	$filename =~ s/[^\w\.\s]//g;
+	$filename =~ s/\s+/_/g;
+	$filename =~ s/_+/_/g;
+
+	return $filename;
+}
+
 sub slurp {
 	my $self = shift;
 	my $filename = shift;
@@ -624,13 +602,26 @@ sub slurp {
 	my $text;
 	eval {
 		local $/ = undef;
-		open (my $fh, "<:utf8", $filename)
+		open (my $fh, "<", $filename)
 			|| die "Unable to open file: $!";
 		$text = <$fh>;
 		close $fh;
 	};
+	warn $@ if $@;
 
 	return $text;
+}
+
+sub slurp_json {
+	my $self = shift;
+	my $filename = shift;
+
+	my $json = $self->slurp ($filename);
+	eval {
+		$json = decode_json ($json);
+	};
+
+	return $json || {};
 }
 
 sub source_files {
@@ -665,9 +656,9 @@ sub xml_to_pdf {
 
 	my @args = (
 		"fop",
-		"-c",   "$base_dir/conf/fop.xconf",
-		"-xml", "$xml_file",
-		"-xsl", "$base_dir/style/stylesheet.xsl",
+		"-c",   "\"$base_dir/conf/fop.xconf\"",
+		"-xml", "\"$xml_file\"",
+		"-xsl", "\"$base_dir/style/stylesheet.xsl\"",
 		"-pdf", "\"$pdf_filename\""
 	);
 
