@@ -65,8 +65,6 @@ sub bootstrap {
 		|| die "Unable to open file: $!";
 	print $fh $md;
 	close $fh;
-
-	exit;
 }
 
 sub handle_options {
@@ -84,6 +82,7 @@ sub main {
 
 	if ($options->{bootstrap}) {
 		bootstrap();
+		exit;
 	}
 
 	Mutt::DocBuilder->new (
