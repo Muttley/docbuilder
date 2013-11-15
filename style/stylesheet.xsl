@@ -5,7 +5,7 @@
 				extension-element-prefixes="date"
 				version="1.0">
 
-	<xsl:import href="docbook-xsl-1.77.1/fo/docbook.xsl"/>
+	<xsl:import href="docbook-xsl/fo/docbook.xsl"/>
 
 	<xsl:param name="body.font.family" select="'Verdana'"/>
 	<xsl:param name="body.margin.top">1.7cm</xsl:param>
