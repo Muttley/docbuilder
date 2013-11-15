@@ -9,17 +9,16 @@ use File::Path;
 use File::Temp;
 use JSON::XS;
 use Moose;
+use Path::Class;
 
 use namespace::clean -except => [qw(meta)];
 
 has 'base_dir' => (
 	is => 'ro',
-	isa => 'Str',
+	isa => 'Path::Class::Dir',
 	lazy => 1,
 	default => sub {
-		my $dir = dirname ($0);
-		$dir =~ s/\\/\//g;
-		return $dir;
+		return dir (dirname ($0));
 	}
 );
 
@@ -30,7 +29,7 @@ has 'config' => (
 	default => sub {
 		my $self = shift;
 
-		my $filename = $self->source . '/config.json';
+		my $filename = file ($self->source, 'config.json');
 
 		return $self->slurp_json ($filename) || {};
 	}
@@ -43,7 +42,7 @@ has 'global_replacements' => (
 	default => sub {
 		my $self = shift;
 
-		my $filename = $self->templates . '/global-replacements.json';
+		my $filename = file ($self->templates, 'global-replacements.json');
 
 		return $self->slurp_json ($filename) || {};
 	},
@@ -51,10 +50,10 @@ has 'global_replacements' => (
 
 has 'images' => (
 	is => 'ro',
-	isa => 'Str',
+	isa => 'Path::Class::Dir',
 	lazy => 1,
 	default => sub {
-		return shift->base_dir . '/images';
+		return dir (shift->base_dir, '/images');
 	}
 );
 
