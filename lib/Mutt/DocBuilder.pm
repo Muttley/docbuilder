@@ -10,6 +10,7 @@ use File::Temp;
 use JSON::XS;
 use Moose;
 use Path::Class;
+use URI::Escape;
 
 use namespace::clean -except => [qw(meta)];
 
@@ -35,6 +36,27 @@ has 'config' => (
 	}
 );
 
+has 'filename_base' => (
+	is => 'ro',
+	isa => 'Str',
+	lazy => 1,
+	default => sub {
+		my $self = shift;
+
+		my $title = $self->title;
+
+		$title =~ s/\s+/_/g;
+
+		if ($self->version) {
+			$title .= '_v' . $self->version;
+		}
+
+		$title .= '_' . uc ($self->language);
+
+		return uri_escape_utf8 ($title);
+	}
+);
+
 has 'global_replacements' => (
 	is => 'ro',
 	isa => 'HashRef',
@@ -48,12 +70,19 @@ has 'global_replacements' => (
 	},
 );
 
-has 'images' => (
+has 'image_dirs' => (
 	is => 'ro',
-	isa => 'Path::Class::Dir',
+	isa => 'ArrayRef[Path::Class::Dir]',
 	lazy => 1,
 	default => sub {
-		return dir (shift->base_dir, '/images');
+		my $self = shift;
+
+		my @dirs = (
+			dir ($self->base_dir, 'images'),
+			dir ($self->source_images)
+		);
+
+		return \@dirs;
 	}
 );
 
@@ -74,14 +103,12 @@ has 'language' => (
 
 has 'merged_markdown' => (
 	is => 'ro',
-	isa => 'Str',
+	isa => 'Path::Class::File',
 	lazy => 1,
 	default => sub {
 		my $self = shift;
 
-		my $filename = $self->sanitize_filename ($self->title . ".md");
-
-		return $self->temp_dirname . "/$filename";
+		return file ($self->temp_dir, $self->filename_base . ".md");
 	}
 );
 
@@ -91,22 +118,25 @@ has 'output' => (
 	required => 1
 );
 
-has 'pdf_filename' => (
+has 'output_dir' => (
 	is => 'ro',
-	isa => 'Str',
+	isa => 'Path::Class::Dir',
+	required => 1,
+	default => sub {
+		my $self = shift;
+
+		return dir ($self->output);
+	}
+);
+
+has 'pdf_file' => (
+	is => 'ro',
+	isa => 'Path::Class::File',
 	lazy => 1,
 	default => sub {
 		my $self = shift;
 
-		my $title = $self->title;
-
-		if ($self->version) {
-			$title .= '_v' . $self->version;
-		}
-
-		$title .= '_' . uc ($self->language) . ".pdf";
-
-		return $self->sanitize_filename ($title);
+		return file ($self->output_dir, $self->filename_base . ".pdf");
 	}
 );
 
@@ -117,12 +147,12 @@ has 'replacements' => (
 	default => sub {
 		my $self = shift;
 
-		my $filename = $self->source . '/replacements.json';
+		my $json = $self->slurp_json(
+			file ($self->source, 'replacements.json')
+		);
 
-		my $json = $self->slurp_json ($filename);
-
-		$json->{$self->language} ||= {};
 		$json->{global} ||= {};
+		$json->{$self->language} ||= {};
 
 		my $globals = $self->global_replacements;
 		for my $key (keys %{$globals}) {
@@ -168,12 +198,23 @@ has 'source' => (
 
 has 'source_dir' => (
 	is => 'ro',
-	isa => 'Str',
+	isa => 'Path::Class::Dir',
 	lazy => 1,
 	default => sub {
 		my $self = shift;
 
-		return $self->source . '/' . $self->language;
+		return dir ($self->source, $self->language);
+	}
+);
+
+has 'source_images' => (
+	is => 'ro',
+	isa => 'Path::Class::Dir',
+	lazy => 1,
+	default => sub {
+		my $self = shift;
+
+		return dir ($self->source, 'images');
 	}
 );
 
@@ -181,10 +222,7 @@ has 'table_ids' => (
 	is => 'ro',
 	isa => 'ArrayRef[Str]',
 	lazy => 1,
-	default => sub {
-		my @table_ids;
-		return \@table_ids;
-	}
+	default => sub {[]}
 );
 
 has 'tag_subroutines' => (
@@ -192,14 +230,12 @@ has 'tag_subroutines' => (
 	isa => 'ArrayRef[Str]',
 	lazy => 1,
 	default => sub {
-		my @subs = qw(
+		[qw(
 			process_images
 			process_indexes
 			process_links
 			process_replacements
-		);
-
-		return \@subs;
+		)]
 	}
 );
 
@@ -223,10 +259,10 @@ has 'temp_dirname' => (
 
 has 'templates' => (
 	is => 'ro',
-	isa => 'Str',
+	isa => 'Path::Class::Dir',
 	lazy => 1,
 	default => sub {
-		return shift->base_dir . "/templates";
+		return dir (shift->base_dir, "templates");
 	}
 );
 
@@ -235,7 +271,11 @@ has 'title' => (
 	isa => 'Str',
 	lazy => 1,
 	default => sub {
-		return shift->config->{title} || "Untitled Document";
+		my $self = shift;
+
+		my $title = $self->config->{title} || "Untitled Document";
+
+		return $self->process_replacements ($title);
 	}
 );
 
@@ -250,14 +290,12 @@ has 'version' => (
 
 has 'xml_file' => (
 	is => 'ro',
-	isa => 'Str',
+	isa => 'Path::Class::File',
 	lazy => 1,
 	default => sub {
 		my $self = shift;
 
-		my $filename = $self->sanitize_filename ($self->title . ".xml");
-
-		return $self->temp_dirname . "/$filename";
+		return file ($self->temp_dir, $self->filename_base . ".xml");
 	}
 );
 
@@ -277,14 +315,15 @@ sub copy_images {
 
 	say "Copying document images...";
 
-	for my $path ($self->images, $self->source . '/images') {
+	for my $path (@{$self->image_dirs}) {
 		if (-d $path) {
-			opendir (my $dh, $path)
+			opendir my $dh, $path
 				|| die "Unable to open directory: $!";
 
 			while (my $entry = readdir $dh) {
 				next if ($entry eq '.' || $entry eq '..');
-				copy ("$path/$entry", $self->temp_dirname . '/.')
+
+				copy(file ($path, $entry), $self->temp_dirname)
 					|| die "Failed to copy image file: $!";
 			}
 
@@ -583,17 +622,6 @@ sub process_replacements {
 	return $line;
 }
 
-sub sanitize_filename {
-	my $self = shift;
-	my $filename = shift;
-
-	$filename =~ s/[^\w\.\s]//g;
-	$filename =~ s/\s+/_/g;
-	$filename =~ s/_+/_/g;
-
-	return $filename;
-}
-
 sub slurp {
 	my $self = shift;
 	my $filename = shift;
@@ -626,8 +654,6 @@ sub slurp_json {
 sub source_files {
 	my $self = shift;
 
-	my $dir = $self->source . '/' . $self->language;
-
 	opendir (my $dh, $self->source_dir)
 		|| die "Unable to open directory: $!";
 
@@ -649,16 +675,14 @@ sub xml_to_pdf {
 
 	my $base_dir = $self->base_dir;
 	my $xml_file = $self->xml_file;
-	my $pdf_filename = $self->output . '/' . $self->pdf_filename;
-
-	$pdf_filename =~ s/\\/\//g;
+	my $pdf_file = $self->pdf_file;
 
 	my @args = (
 		"fop",
 		"-c",   "\"$base_dir/conf/fop.xconf\"",
 		"-xml", "\"$xml_file\"",
 		"-xsl", "\"$base_dir/style/stylesheet.xsl\"",
-		"-pdf", "\"$pdf_filename\""
+		"-pdf", "\"$pdf_file\""
 	);
 
 	system (@args) == 0
