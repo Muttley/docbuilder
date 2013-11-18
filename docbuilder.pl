@@ -16,6 +16,7 @@ my $program = fileparse ($0);
 
 my $options = {
 	bootstrap => 0,
+	config    => [],
 	language  => 'en',
 	output    => '.',
 	source    => './manual',
@@ -70,6 +71,7 @@ sub bootstrap {
 sub handle_options {
 	GetOptions(
 		'bootstrap|b'  => \$options->{bootstrap},
+		'config|c=s'   => $options->{config},
 		'language|l=s' => \$options->{language},
 		'output|o=s'   => \$options->{output},
 		'source|s=s'   => \$options->{source},
@@ -85,11 +87,18 @@ sub main {
 		exit;
 	}
 
-	Mutt::DocBuilder->new (
+	my $docbuilder = Mutt::DocBuilder->new (
 		language => $options->{language},
 		output   => $options->{output},
 		source   => $options->{source}
-	)->build;
+	);
+
+	for my $config_option (@{$options->{config}}) {
+		my ($key, $value) = split /\=/, $config_option, 2;
+		$docbuilder->config->{$key} = $value;
+	}
+
+	$docbuilder->build;
 }
 
 sub usage {
@@ -104,6 +113,11 @@ options:
     --b|bootstrap   Bootstrap a new document project.  This creates a base
                     document project in the directory specified by the
                     --o|output option.
+
+    --c|config      Additional config options in key=value format. These
+                    options will override any with the same name in the
+                    document's config.json file.  Can be specified mutliple
+                    times.
 
     --l|language    Language of the manual to be built. The language
                     sub-directory will automatically be appended to the
