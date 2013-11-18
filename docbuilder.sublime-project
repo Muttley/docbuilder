@@ -9,7 +9,7 @@
 	"build_systems": [
 		{
 			"name": "Build document",
-			"cmd": ["docbuild", "--o", "./build"],
+			"cmd": ["docbuilder", "--o", "./build"],
 			"working_dir": "${project_path}",
 			"shell": "true"
 		}

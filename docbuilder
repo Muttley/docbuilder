@@ -12,4 +12,4 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 export PERL5LIB=$DIR/lib:$PERL5LIB
 
-perl $DIR/docbuild.pl $*
+perl $DIR/docbuilder.pl $*
