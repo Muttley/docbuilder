@@ -2,4 +2,6 @@ syntax: glob
 
 *.sublime-workspace
 
+.gradle/*
 build/*
+
