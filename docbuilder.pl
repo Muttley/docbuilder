@@ -94,7 +94,7 @@ sub main {
 	);
 
 	for my $config_option (@{$options->{config}}) {
-		my ($key, $value) = split /\=/, $config_option, 2;
+		my ($key, $value) = split (/\=/, $config_option, 2);
 		$docbuilder->config->{$key} = $value;
 	}
 
