@@ -170,9 +170,9 @@ has 'replacements' => (
 			$json->{global}->{___VERSION___} = $version;
 		}
 
-		# Replace {{___COPYRIGHT___}} in copyright template with correct start and
-		# end years.  If start year is the same as current year then only one year
-		# is displayed.
+		# Replace {{___COPYRIGHT___}} in copyright template with correct start
+		# and end years.  If start year is the same as current year then only
+		# one year is displayed.
 		my $current_year = (localtime)[5] + 1900;
 		my $start_year   = $self->config->{copyright} || $current_year;
 
@@ -518,7 +518,8 @@ sub process_images {
 			$figure_id =~ s/[^a-z0-9 ]//g;
 			$figure_id =~ s/ /-/g;
 
-			$imageobject = "<figure id=\"fig-$figure_id\"><title>$captured_title</title>"
+			$imageobject =
+				"<figure id=\"fig-$figure_id\"><title>$captured_title</title>"
 				. "<mediaobject>$imageobject<textobject><phrase>"
 				. "$captured_title</phrase></textobject></mediaobject>"
 				. "</figure>";
