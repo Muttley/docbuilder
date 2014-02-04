@@ -73,7 +73,7 @@ sub bootstrap {
 sub main {
 	GetOptions(
 		'bootstrap|b'  => \$options->{bootstrap},
-		'config|c=s'   => \$options->{config},
+		'config|c=s'   =>  $options->{config},
 		'language|l=s' => \$options->{language},
 		'output|o=s'   => \$options->{output},
 		'source|s=s'   => \$options->{source},
