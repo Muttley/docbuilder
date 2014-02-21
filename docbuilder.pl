@@ -18,6 +18,7 @@ my $program = fileparse ($0);
 my $options = {
 	bootstrap => 0,
 	config    => [],
+	debug     => $ENV{DOCBUILDER_DEBUG} ||= 0,
 	language  => 'en',
 	output    => '.',
 	source    => './manual',
@@ -74,6 +75,7 @@ sub main {
 	GetOptions(
 		'bootstrap|b'  => \$options->{bootstrap},
 		'config|c=s'   =>  $options->{config},
+		'debug|d'      => \$options->{debug},
 		'language|l=s' => \$options->{language},
 		'output|o=s'   => \$options->{output},
 		'source|s=s'   => \$options->{source},
@@ -87,6 +89,7 @@ sub main {
 	}
 
 	my $docbuilder = Mutt::DocBuilder->new(
+		debug    => $options->{debug},
 		language => $options->{language},
 		output   => $options->{output},
 		source   => $options->{source}
@@ -98,6 +101,11 @@ sub main {
 	}
 
 	$docbuilder->build;
+
+	if ($docbuilder->debug) {
+		say "DEBUG: Temporary files can found at this location: "
+			. $docbuilder->temp_dir;
+	}
 }
 
 sub usage {
@@ -120,6 +128,10 @@ options:
                    options will override any with the same name in the
                    document's config.json file.  Can be specified mutliple
                    times.
+
+    -d|debug       Enable debug mode. Keeps generated temporary files for debug
+                   purposes. Can also be enabled by setting a DOCBUILDER_DEBUG
+                   environment variable to '1'.
 
     -l|language    Language of the manual to be built. The language
                    sub-directory will automatically be appended to the

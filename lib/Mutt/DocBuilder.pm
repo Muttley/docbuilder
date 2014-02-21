@@ -36,6 +36,12 @@ has 'config' => (
 	}
 );
 
+has 'debug' => (
+	is       => 'ro',
+	isa      => 'Int',
+	required => 1,
+);
+
 has 'filename_base' => (
 	is => 'ro',
 	isa => 'Str',
@@ -244,7 +250,9 @@ has 'temp_dir' => (
 	isa => 'File::Temp::Dir',
 	lazy => 1,
 	default => sub {
-		return File::Temp->newdir (CLEANUP => 1);
+		my $self = shift;
+
+		return File::Temp->newdir (CLEANUP => (1 ^ $self->debug));
 	}
 );
 

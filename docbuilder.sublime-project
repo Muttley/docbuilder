@@ -1,17 +1,27 @@
 {
+	"build_systems":
+	[
+		{
+			"cmd":
+			[
+				"docbuilder",
+				"--o",
+				"./build"
+			],
+			"name": "Build document",
+			"shell": "true",
+			"working_dir": "${project_path}"
+		}
+	],
 	"folders":
 	[
 		{
-			"path": ".",
-			"file_exclude_patterns": ["*.sublime-workspace"]
-		}
-	],
-	"build_systems": [
-		{
-			"name": "Build document",
-			"cmd": ["docbuilder", "--o", "./build"],
-			"working_dir": "${project_path}",
-			"shell": "true"
+			"file_exclude_patterns":
+			[
+				"*.sublime-workspace"
+			],
+			"follow_symlinks": true,
+			"path": "."
 		}
 	]
 }
