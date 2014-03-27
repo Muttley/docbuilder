@@ -77,4 +77,15 @@
 		<fo:block break-after="page"/>
 	</xsl:template>
 
+	<!-- itemized lists -->
+
+	<xsl:attribute-set name="list.block.spacing">
+		<xsl:attribute name="margin-left">
+			<xsl:choose>
+				<xsl:when test="self::itemizedlist">2em</xsl:when>
+				<xsl:otherwise>0pt</xsl:otherwise>
+			</xsl:choose>
+		</xsl:attribute>
+	</xsl:attribute-set>
+
 </xsl:stylesheet>
