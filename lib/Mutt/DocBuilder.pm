@@ -224,6 +224,19 @@ has 'source_images' => (
 	}
 );
 
+has 'subtitle' => (
+	is => 'ro',
+	isa => 'Str',
+	lazy => 1,
+	default => sub {
+		my $self = shift;
+
+		my $subtitle = $self->config->{subtitle} || "";
+
+		return $self->process_replacements ($subtitle);
+	}
+);
+
 has 'table_ids' => (
 	is => 'ro',
 	isa => 'ArrayRef[Str]',
@@ -472,6 +485,13 @@ sub parse_xml {
 			}
 			$line .= $text . $end_title . "\n";
 		}
+		elsif ($line =~ m/<\/articleinfo>$/) {
+			# insert any subtitle before the articleinfo tag closes
+			if ($self->subtitle) {
+				my $subtitle = "<subtitle>" . $self->subtitle . "</subtitle>\n";
+				$line = $subtitle . $line;
+			}
+		}
 
 		print $ofh $line;
 	}
@@ -639,7 +659,7 @@ sub slurp {
 	eval {
 		local $/ = undef;
 		open (my $fh, "<", $filename)
-			|| die "Unable to open file: $!";
+			|| die "Unable to open file '$filename': $!";
 		$text = <$fh>;
 		close $fh;
 	};
