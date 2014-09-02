@@ -69,6 +69,11 @@ sub bootstrap {
 		file ($base_dir, 'en', '01.00-Chapter1.md'),
 		"# Chapter 1\n\nThis is the first chapter.\n"
 	);
+
+	write_data_to_file(
+		file ($base_dir, 'images', '.empty'),
+		""
+	);
 }
 
 sub main {
