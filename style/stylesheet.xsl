@@ -38,8 +38,8 @@
 		<xsl:attribute name="keep-together.within-column">always</xsl:attribute>
 	</xsl:attribute-set>
 
-	<!-- Set code block font and style. Will always try to keep code blocks on -->
-	<!-- same page -->
+	<!-- Set code block font and style. Will always try to keep code blocks -->
+	<!-- on the same page -->
 
 	<xsl:attribute-set name="monospace.verbatim.properties">
 		<xsl:attribute name="font-family">Consolas</xsl:attribute>
@@ -61,7 +61,8 @@
 	  <xsl:attribute name="font-style">italic</xsl:attribute>
 	</xsl:attribute-set>
 
-	<!-- Macro that allows us to insert hard page breaks wherever we want in the document -->
+	<!-- Macro that allows us to insert hard page breaks wherever we want in -->
+	<!-- the document -->
 
 	<xsl:template match="processing-instruction('hard-pagebreak')">
 		<fo:block break-after='page'/>
