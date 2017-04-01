@@ -418,8 +418,8 @@ sub merge_markdown {
 	# Insert the copyright message
 	my $copyright = $self->slurp ($self->templates . '/copyright.md') || '';
 
-	$copyright =~ s/{{___COPYRIGHT___}}/$replacements->{global}->{___COPYRIGHT___}/g;
-	$copyright =~ s/{{___COMPANY_NAME___}}/$replacements->{global}->{___COMPANY_NAME___}/g;
+	$copyright =~ s/\{\{___COPYRIGHT___\}\}/$replacements->{global}->{___COPYRIGHT___}/g;
+	$copyright =~ s/\{\{___COMPANY_NAME___\}\}/$replacements->{global}->{___COMPANY_NAME___}/g;
 
 	print $ofh "$copyright\n\n";
 
@@ -442,7 +442,7 @@ sub merge_markdown {
 
 			# Leave escaped tags alone and remove the escape character as a
 			# final step
-			$line =~ s/\\{{/{{/g;
+			$line =~ s/\\\{\{/{{/g;
 
 			print $ofh $line;
 		}
@@ -647,11 +647,11 @@ sub process_replacements {
 
 	if ($line =~ m/(?<!\\)\{\{/m) {
 		for my $key (keys %{$replacements->{$self->language}}) {
-			$line =~ s/{{$key}}/$replacements->{$self->language}->{$key}/g;
+			$line =~ s/\{\{$key\}\}/$replacements->{$self->language}->{$key}/g;
 		}
 
 		for my $key (keys %{$replacements->{global}}) {
-			$line =~ s/{{$key}}/$replacements->{global}->{$key}/g;
+			$line =~ s/\{\{$key\}\}/$replacements->{global}->{$key}/g;
 		}
 	}
 
