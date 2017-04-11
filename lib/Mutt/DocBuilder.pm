@@ -99,6 +99,20 @@ has 'image_dirs' => (
 	}
 );
 
+has 'include_dir' => (
+	is => 'ro',
+	isa => 'Path::Class::Dir',
+	lazy => 1,
+	default => sub {
+		my $self = shift;
+
+		my $dir = dir ($self->source, 'includes');
+		$dir->mkpath;
+
+		return $dir;
+	}
+);
+
 has 'index' => (
 	is => 'ro',
 	isa => 'Int',
@@ -227,7 +241,10 @@ has 'source_images' => (
 	default => sub {
 		my $self = shift;
 
-		return dir ($self->source, 'images');
+		my $dir = dir ($self->source, 'images');
+		$dir->mkpath;
+
+		return $dir;
 	}
 );
 
@@ -257,6 +274,7 @@ has 'tag_subroutines' => (
 	lazy => 1,
 	default => sub {
 		[qw(
+			process_code
 			process_images
 			process_indexes
 			process_links
@@ -509,6 +527,33 @@ sub parse_xml {
 	unlink $self->xml_file;
 	copy ($self->xml_file . '.1', $self->xml_file);
 	unlink $self->xml_file . '.1';
+}
+
+sub process_code {
+	my $self = shift;
+	my $line = shift;
+
+	# Support code blocks with syntax highlighting where available, eg:
+	#
+	# {{code:code_filname.pl|perl}}
+	if ($line =~ m/(?<!\\)(\{\{code:([^|()]+)(?:\|([^}]+))?\}\})/m) {
+		my $captured_tag      = quotemeta $1;
+		my $captured_filename = $2;
+		my $captured_language = $3;
+
+		my $code_block = "~~~";
+		$code_block .= $captured_language ? "$captured_language\n" : "\n";
+
+		my $code_path = file ($self->include_dir, $captured_filename);
+		my $code_data = $code_path->slurp;
+
+		$code_block .= $code_data;
+		$code_block .= "\n~~~\n";
+
+		$line =~ s/$captured_tag/$code_block/g;
+	}
+
+	return $line;
 }
 
 sub process_images {
