@@ -660,7 +660,7 @@ sub process_links {
 	#
 	# {{link:Section Title}}
 	#
-	if ($line =~ m/(?<!\\)(\{\{link\|(figure|section|table):(.+)\}\})/m) {
+	if ($line =~ m/(?<!\\)(\{\{link:(figure|section|table)\|(.+)\}\})/m) {
 		my $captured_tag = quotemeta $1;
 		my $type  = lc $2;
 		my $label = $3;
