@@ -23,12 +23,14 @@ use Mutt::DocBuilder;
 my $program = fileparse ($0);
 
 my $options = {
+	debug => $ENV{DOCBUILDER_DEBUG} ||= 0,
+	config => [],
+	output => '.',
+	source => './manual',
+	language => 'en',
 	bootstrap => 0,
-	config    => [],
-	debug     => $ENV{DOCBUILDER_DEBUG} ||= 0,
-	language  => 'en',
-	output    => '.',
-	source    => './manual',
+	replacements => [],
+	global_replacements => [],
 };
 
 sub bootstrap {
@@ -85,14 +87,15 @@ sub bootstrap {
 
 sub main {
 	GetOptions(
-		'bootstrap|b'  => \$options->{bootstrap},
-		'config|c=s'   =>  $options->{config},
-		'debug|d'      => \$options->{debug},
+		'debug|d' => \$options->{debug},
+		'config|c=s' =>  $options->{config},
+		'output|o=s' => \$options->{output},
+		'source|s=s' => \$options->{source},
+		'bootstrap|b' => \$options->{bootstrap},
+		'help|usage|?' => sub { usage(); },
 		'language|l=s' => \$options->{language},
-		'output|o=s'   => \$options->{output},
-		'source|s=s'   => \$options->{source},
-
-		'help|usage|?' => sub { usage(); }
+		'replacements|r=s' => $options->{replacements},
+		'global_replacements|g=s' => $options->{global_replacements},
 	);
 
 	if ($options->{bootstrap}) {
@@ -107,9 +110,11 @@ sub main {
 		source   => $options->{source}
 	);
 
-	for my $config_option (@{$options->{config}}) {
-		my ($key, $value) = split (/\=/, $config_option, 2);
-		$docbuilder->config->{$key} = $value;
+	for my $set (qw(config global_replacements replacements)) {
+		for my $option (@{ $options->{$set} }) {
+			my ($key, $value) = split /\=/, $option, 2;
+			$docbuilder->$set->{$key} = $value;
+		}
 	}
 
 	$docbuilder->build;
@@ -132,28 +137,30 @@ $program
 
 options:
 
-    -b|bootstrap   Bootstrap a new document project.  This creates a base
-                   document project in the directory specified by the
-                   -o|output option.
+    -b|bootstrap           Bootstrap a new document project.  This creates a
+                           base document project in the directory specified
+                           by the -o|output option.
 
-    -c|config      Additional config options in key=value format. These
-                   options will override any with the same name in the
-                   document's config.json file.  Can be specified mutliple
-                   times.
+    -l|language            Language of the manual to be built. The language
+                           sub-directory will automatically be appended to
+                           the source directory. (default: "en")
 
-    -d|debug       Enable debug mode. Keeps generated temporary files for debug
-                   purposes. Can also be enabled by setting a DOCBUILDER_DEBUG
-                   environment variable to '1'.
+    -o|output              The output directory where the final PDF should be
+                           created (default: ".")
 
-    -l|language    Language of the manual to be built. The language
-                   sub-directory will automatically be appended to the
-                   source directory. (default: "en")
+    -s|source              Base manual source directory.
+                           (default: "./manual")
 
-    -o|output      The output directory where the final PDF should be
-                   created (default: ".")
+    -c|config              config.json item formatted as key=value, can be
+                           specified multiple times
 
-    -s|source      Base manual source directory.
-                   (default: "./manual")
+    -g|global-replacement  global replacements.json item formatted as
+                           key=value, can be specified multiple times
+
+    -r|replacement         language specific replacements.json item formatted
+                           as key=value, can be specified multiple times,
+                           will be placed in the replacements list for the
+                           language specified by the --language option
 
 usage:
 
