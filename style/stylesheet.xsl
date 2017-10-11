@@ -21,7 +21,7 @@
 	<xsl:param name="header.rule" select="0"/>
 	<xsl:param name="paper.type" select="'A4'"/>
 	<xsl:param name="region.before.extent">1.5cm</xsl:param>
-	<xsl:param name="section.autolabel" select="'1'"/>
+	<xsl:param name="section.autolabel" select="'0'"/>
 	<xsl:param name="shade.verbatim" select="1"/>
 	<xsl:param name="title.font.family" select="'Verdana'"/>
 	<xsl:param name="toc.section.depth">3</xsl:param>
