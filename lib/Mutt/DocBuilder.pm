@@ -666,8 +666,9 @@ sub process_links {
 		my $label = $3;
 
 		$label = lc $label;
-		$label =~ s/[^a-z0-9 ]//g;
-		$label =~ s/ /-/g;
+		$label =~ s/[^a-z0-9\s\-]//g;
+		$label =~ s/\s/-/g;
+		$label =~ s/^\d+//g;
 
 		if ($type eq 'figure') {
 			$label = "fig-$label";
