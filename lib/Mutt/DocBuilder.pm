@@ -464,7 +464,7 @@ sub merge_markdown {
 
 			print $ofh $line;
 		}
-
+		print $ofh "\n\n<?hard-pagebreak?>";
 		print $ofh "\n\n";
 		close $ifh;
 	}
