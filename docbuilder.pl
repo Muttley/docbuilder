@@ -141,6 +141,10 @@ options:
                            base document project in the directory specified
                            by the -o|output option.
 
+    -d|debug               If debug mode is enabled, the temporary files
+                           created when the document is being built are
+                           kept for investigative reasons
+
     -l|language            Language of the manual to be built. The language
                            sub-directory will automatically be appended to
                            the source directory. (default: "en")
